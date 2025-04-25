@@ -1,15 +1,60 @@
 const animeListContainer = document.getElementById('anime-list');
+const genreButtonsContainer = document.getElementById('genre-buttons');
 const generatePdfButton = document.getElementById('generate-pdf');
 
 let animeQueue = [];
-let currentIndex = 0;
 let currentPage = 1;
 let seenTitles = new Set(JSON.parse(localStorage.getItem('seenAnime')) || []);
 let shownTitles = new Set();
+let selectedGenres = new Set(); // <- maintenant on a plusieurs genres
+
+async function fetchGenres() {
+  const response = await fetch('https://api.jikan.moe/v4/genres/anime');
+  const data = await response.json();
+  displayGenreButtons(data.data);
+}
+
+function displayGenreButtons(genres) {
+  genres.forEach(genre => {
+    const button = document.createElement('button');
+    button.textContent = genre.name;
+    button.dataset.genreId = genre.mal_id;
+
+    button.addEventListener('click', () => {
+      const genreId = parseInt(genre.mal_id);
+
+      // toggle genre dans le Set
+      if (selectedGenres.has(genreId)) {
+        selectedGenres.delete(genreId);
+        button.classList.remove('active');
+      } else {
+        selectedGenres.add(genreId);
+        button.classList.add('active');
+      }
+
+      resetQueue();
+      fetchMoreAnime();
+    });
+
+    genreButtonsContainer.appendChild(button);
+  });
+}
+
+function resetQueue() {
+  animeQueue = [];
+  currentPage = 1;
+  shownTitles = new Set();
+}
 
 async function fetchMoreAnime() {
   try {
-    const response = await fetch(`https://api.jikan.moe/v4/top/anime?page=${currentPage}`);
+    let url = `https://api.jikan.moe/v4/top/anime?page=${currentPage}`;
+    if (selectedGenres.size > 0) {
+      const genresParam = Array.from(selectedGenres).join(',');
+      url = `https://api.jikan.moe/v4/anime?genres=${genresParam}&page=${currentPage}&order_by=popularity`;
+    }
+
+    const response = await fetch(url);
     const data = await response.json();
     currentPage++;
 
@@ -33,7 +78,6 @@ function showNextAnime() {
   }
 
   const anime = animeQueue.shift();
-
   if (!anime) {
     animeListContainer.innerHTML = '<p>Plus d’animes à afficher pour l’instant...</p>';
     return;
@@ -71,7 +115,6 @@ function showNextAnime() {
 
   animeListContainer.appendChild(animeCard);
 
-  // Précharger d'autres animes si la file devient courte
   if (animeQueue.length < 5) {
     fetchMoreAnime();
   }
@@ -101,4 +144,6 @@ generatePdfButton.addEventListener('click', () => {
   doc.save('animes_vus.pdf');
 });
 
+// Démarrage
+fetchGenres();
 fetchMoreAnime();
