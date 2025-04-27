@@ -121,8 +121,8 @@
               <span id="liked-count" class="stat-value">0</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Skipped Anime:</span>
-              <span id="skipped-count" class="stat-value">0</span>
+              <span class="stat-label">Episodes Watched:</span>
+              <span id="episodes-count" class="stat-value">0</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Total Viewed:</span>
@@ -149,6 +149,45 @@
           </button>
         </div>
       </main>
+
+      <!-- New anime details panel for desktop -->
+      <div class="anime-details-panel">
+        <div class="anime-details-header">
+          <h3>Anime Details</h3>
+        </div>
+        <div class="anime-details-content">
+          <div class="anime-stats">
+            <div class="stat-card">
+              <div class="stat-value" id="desktop-liked-count">0</div>
+              <div class="stat-label">Liked</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="desktop-episodes-count">0</div>
+              <div class="stat-label">Episodes</div>
+            </div>
+          </div>
+
+          <div class="anime-details-section">
+            <h4><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h4>
+            <div class="keyboard-shortcuts desktop-only">
+              <span><kbd>←</kbd> Skip</span>
+              <span><kbd>→</kbd> Like</span>
+              <span><kbd>Z</kbd> Undo</span>
+            </div>
+          </div>
+
+          <div class="anime-details-section">
+            <h4><i class="fas fa-history"></i> Recent Activity</h4>
+            <ul class="anime-history" id="anime-history-list">
+              <!-- History items will be added here dynamically -->
+              <div class="empty-state">
+                <i class="fas fa-list"></i>
+                <p>Your anime history will appear here as you swipe</p>
+              </div>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
 
     <footer>
