@@ -14,6 +14,11 @@
     <header>
       <h1>Anime Swiper</h1>
       <div class="header-actions">
+        <div class="keyboard-shortcuts desktop-only">
+          <span><kbd>←</kbd> Skip</span>
+          <span><kbd>→</kbd> Like</span>
+          <span><kbd>Z</kbd> Undo</span>
+        </div>
         <button id="filter-button" class="icon-button">
           <i class="fas fa-filter"></i>
           <span id="filter-badge" class="badge hidden">0</span>
@@ -21,101 +26,129 @@
       </div>
     </header>
     
-    <div id="filter-panel" class="hidden">
-      <div class="filter-header">
-        <h3>Filter Anime</h3>
-        <button id="close-filter" class="icon-button">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      
-      <div class="filter-search">
-        <div class="search-container">
-          <i class="fas fa-search search-icon"></i>
-          <input type="text" id="genre-search" placeholder="Search genres...">
-          <button id="clear-search" class="clear-search hidden">
+    <div class="desktop-layout">
+      <aside id="filter-panel" class="hidden">
+        <div class="filter-header">
+          <h3>Filter Anime</h3>
+          <button id="close-filter" class="icon-button">
             <i class="fas fa-times"></i>
           </button>
         </div>
-      </div>
-      
-      <div class="filter-sections">
-        <div class="filter-section">
-          <div class="section-header">
-            <h4>Quick Filters</h4>
-          </div>
-          <div class="quick-filters">
-            <button data-filter="popular" class="quick-filter-btn">
-              <i class="fas fa-fire"></i> Popular
-            </button>
-            <button data-filter="top-rated" class="quick-filter-btn">
-              <i class="fas fa-star"></i> Top Rated
-            </button>
-            <button data-filter="new" class="quick-filter-btn">
-              <i class="fas fa-calendar"></i> New Releases
+        
+        <div class="filter-search">
+          <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="genre-search" placeholder="Search genres...">
+            <button id="clear-search" class="clear-search hidden">
+              <i class="fas fa-times"></i>
             </button>
           </div>
         </div>
         
-        <div class="filter-section">
-          <div class="section-header">
-            <h4>Genres</h4>
-            <button id="clear-genres" class="small-button">Clear All</button>
+        <div class="filter-sections">
+          <div class="filter-section">
+            <div class="section-header">
+              <h4>Quick Filters</h4>
+            </div>
+            <div class="quick-filters">
+              <button data-filter="popular" class="quick-filter-btn">
+                <i class="fas fa-fire"></i> Popular
+              </button>
+              <button data-filter="top-rated" class="quick-filter-btn">
+                <i class="fas fa-star"></i> Top Rated
+              </button>
+              <button data-filter="new" class="quick-filter-btn">
+                <i class="fas fa-calendar"></i> New Releases
+              </button>
+            </div>
           </div>
-          <div id="genre-buttons" class="genre-grid"></div>
+          
+          <div class="filter-section">
+            <div class="section-header">
+              <h4>Genres</h4>
+              <div class="genre-legend desktop-only">
+                <span class="legend-item"><span class="legend-color normal"></span> Not Selected</span>
+                <span class="legend-item"><span class="legend-color active"></span> Include</span>
+                <span class="legend-item"><span class="legend-color banned"></span> Exclude</span>
+              </div>
+              <button id="clear-genres" class="small-button">Clear All</button>
+            </div>
+            <div id="genre-buttons" class="genre-grid"></div>
+          </div>
+          
+          <div class="filter-section">
+            <div class="section-header">
+              <h4>Type</h4>
+            </div>
+            <div class="type-filters">
+              <button data-type="tv" class="type-filter-btn">TV</button>
+              <button data-type="movie" class="type-filter-btn">Movie</button>
+              <button data-type="ova" class="type-filter-btn">OVA</button>
+              <button data-type="special" class="type-filter-btn">Special</button>
+            </div>
+          </div>
+          
+          <div class="filter-section">
+            <div class="section-header">
+              <h4>Year</h4>
+            </div>
+            <div class="year-filters">
+              <select id="year-filter">
+                <option value="">Any Year</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+                <option value="2010s">2010s</option>
+                <option value="2000s">2000s</option>
+                <option value="1990s">1990s</option>
+                <option value="classic">Classic</option>
+              </select>
+            </div>
+          </div>
         </div>
         
-        <div class="filter-section">
-          <div class="section-header">
-            <h4>Type</h4>
-          </div>
-          <div class="type-filters">
-            <button data-type="tv" class="type-filter-btn">TV</button>
-            <button data-type="movie" class="type-filter-btn">Movie</button>
-            <button data-type="ova" class="type-filter-btn">OVA</button>
-            <button data-type="special" class="type-filter-btn">Special</button>
-          </div>
+        <div class="filter-actions">
+          <button id="reset-filters" class="secondary-button">Reset All</button>
+          <button id="apply-filters" class="primary-button">Apply Filters</button>
         </div>
-        
-        <div class="filter-section">
-          <div class="section-header">
-            <h4>Year</h4>
-          </div>
-          <div class="year-filters">
-            <select id="year-filter">
-              <option value="">Any Year</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
-              <option value="2021">2021</option>
-              <option value="2020">2020</option>
-              <option value="2010s">2010s</option>
-              <option value="2000s">2000s</option>
-              <option value="1990s">1990s</option>
-              <option value="classic">Classic</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      
-      <div class="filter-actions">
-        <button id="reset-filters" class="secondary-button">Reset All</button>
-        <button id="apply-filters" class="primary-button">Apply Filters</button>
-      </div>
-    </div>
 
-    <div class="swipe-container">
-      <div id="anime-card-container">
-        <div id="loading">Loading...</div>
-      </div>
-      
-      <div class="action-buttons">
-        <button id="dislike-button" class="action-button dislike">
-          <i class="fas fa-times"></i>
-        </button>
-        <button id="like-button" class="action-button like">
-          <i class="fas fa-heart"></i>
-        </button>
-      </div>
+        <div class="desktop-stats">
+          <h4>Your Stats</h4>
+          <div class="stats-container">
+            <div class="stat-item">
+              <span class="stat-label">Liked Anime:</span>
+              <span id="liked-count" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Skipped Anime:</span>
+              <span id="skipped-count" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Total Viewed:</span>
+              <span id="total-count" class="stat-value">0</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="swipe-container">
+        <div id="anime-card-container">
+          <div id="loading">Loading...</div>
+        </div>
+        
+        <div class="action-buttons">
+          <button id="dislike-button" class="action-button dislike" title="Skip (Left Arrow)">
+            <i class="fas fa-times"></i>
+          </button>
+          <button id="undo-button" class="action-button undo disabled" title="Undo (Z)">
+            <i class="fas fa-undo"></i>
+          </button>
+          <button id="like-button" class="action-button like" title="Like (Right Arrow)">
+            <i class="fas fa-check"></i>
+          </button>
+        </div>
+      </main>
     </div>
 
     <footer>

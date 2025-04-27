@@ -1,6 +1,3 @@
-// Import Hammer.js (if not already included in your HTML)
-// import Hammer from 'hammerjs'; // Uncomment if using a module bundler
-
 // DOM Elements
 const animeCardContainer = document.getElementById("anime-card-container")
 const genreButtonsContainer = document.getElementById("genre-buttons")
@@ -10,6 +7,7 @@ const filterPanel = document.getElementById("filter-panel")
 const closeFilterButton = document.getElementById("close-filter")
 const likeButton = document.getElementById("like-button")
 const dislikeButton = document.getElementById("dislike-button")
+const undoButton = document.getElementById("undo-button")
 const clearAllButton = document.getElementById("clear-all")
 const genreSearch = document.getElementById("genre-search")
 const clearSearch = document.getElementById("clear-search")
@@ -20,6 +18,9 @@ const filterBadge = document.getElementById("filter-badge")
 const yearFilter = document.getElementById("year-filter")
 const quickFilterButtons = document.querySelectorAll(".quick-filter-btn")
 const typeFilterButtons = document.querySelectorAll(".type-filter-btn")
+const likedCountElement = document.getElementById("liked-count")
+const skippedCountElement = document.getElementById("skipped-count")
+const totalCountElement = document.getElementById("total-count")
 
 // State variables
 let animeQueue = []
@@ -27,6 +28,7 @@ let currentPage = 1
 const seenTitles = new Set(JSON.parse(localStorage.getItem("seenAnime")) || [])
 let shownTitles = new Set()
 const selectedGenres = new Set()
+const bannedGenres = new Set()
 let selectedType = ""
 let selectedYear = ""
 let selectedQuickFilter = ""
@@ -34,12 +36,54 @@ let currentCard = null
 let isAnimating = false
 let allGenres = []
 let isFilterChanged = false
+let isDesktop = window.innerWidth >= 1024
+
+// Stats
+let likedCount = Number.parseInt(localStorage.getItem("likedCount") || "0")
+let skippedCount = Number.parseInt(localStorage.getItem("skippedCount") || "0")
+
+// History
+const animeHistory = []
+const MAX_HISTORY = 10 // Maximum number of anime to keep in history
 
 // Initialize the app
 async function initApp() {
   await fetchGenres()
   await fetchMoreAnime()
   setupEventListeners()
+  updateStats()
+
+  // Check if we're on desktop and adjust UI accordingly
+  checkDesktopMode()
+  window.addEventListener("resize", checkDesktopMode)
+}
+
+// Check if we're in desktop mode and adjust UI
+function checkDesktopMode() {
+  isDesktop = window.innerWidth >= 1024
+
+  // On desktop, we always show the filter panel
+  if (isDesktop) {
+    filterPanel.classList.remove("hidden")
+    // Hide the filter button on desktop as it's not needed
+    filterButton.style.display = "none"
+  } else {
+    filterPanel.classList.add("hidden")
+    filterButton.style.display = "flex"
+  }
+}
+
+// Update stats display
+function updateStats() {
+  if (likedCountElement) {
+    likedCountElement.textContent = likedCount
+  }
+  if (skippedCountElement) {
+    skippedCountElement.textContent = skippedCount
+  }
+  if (totalCountElement) {
+    totalCountElement.textContent = likedCount + skippedCount
+  }
 }
 
 // Fetch genres from API
@@ -66,19 +110,29 @@ function displayGenreButtons(genres) {
     button.textContent = genre.name
     button.dataset.genreId = genre.mal_id
 
-    // Check if this genre is already selected
+    // Check if this genre is already selected or banned
     if (selectedGenres.has(Number.parseInt(genre.mal_id))) {
       button.classList.add("active")
+    } else if (bannedGenres.has(Number.parseInt(genre.mal_id))) {
+      button.classList.add("banned")
     }
 
     button.addEventListener("click", () => {
       const genreId = Number.parseInt(genre.mal_id)
 
-      // Toggle genre in the Set
+      // Toggle between three states: not selected -> selected -> banned -> not selected
       if (selectedGenres.has(genreId)) {
+        // If selected, change to banned
         selectedGenres.delete(genreId)
+        bannedGenres.add(genreId)
         button.classList.remove("active")
+        button.classList.add("banned")
+      } else if (bannedGenres.has(genreId)) {
+        // If banned, change to not selected
+        bannedGenres.delete(genreId)
+        button.classList.remove("banned")
       } else {
+        // If not selected, change to selected
         selectedGenres.add(genreId)
         button.classList.add("active")
       }
@@ -93,7 +147,7 @@ function displayGenreButtons(genres) {
 
 // Update the filter badge with the count of selected filters
 function updateFilterBadge() {
-  let filterCount = selectedGenres.size
+  let filterCount = selectedGenres.size + bannedGenres.size
   if (selectedType) filterCount++
   if (selectedYear) filterCount++
   if (selectedQuickFilter) filterCount++
@@ -148,10 +202,16 @@ function buildApiUrl() {
     // Default search with filters
     url = `https://api.jikan.moe/v4/anime?page=${currentPage}&order_by=popularity`
 
-    // Add genre filter
+    // Add genre filter for included genres
     if (selectedGenres.size > 0) {
       const genresParam = Array.from(selectedGenres).join(",")
       url += `&genres=${genresParam}`
+    }
+
+    // Add genre filter for excluded genres
+    if (bannedGenres.size > 0) {
+      const genresParam = Array.from(bannedGenres).join(",")
+      url += `&genres_exclude=${genresParam}`
     }
 
     // Add type filter
@@ -249,6 +309,12 @@ function showNextAnime() {
   animeImage.src = anime.images.jpg.large_image_url || anime.images.jpg.image_url
   animeImage.alt = anime.title
 
+  // Prevent image click from triggering swipe
+  animeImage.addEventListener("click", (e) => {
+    e.stopPropagation()
+    e.preventDefault()
+  })
+
   // Create anime info section
   const animeInfo = document.createElement("div")
   animeInfo.classList.add("anime-info")
@@ -273,30 +339,54 @@ function showNextAnime() {
   animeCardContainer.appendChild(animeCard)
   currentCard = animeCard
 
+  // Add this: Prevent default click behavior
+  animeCard.addEventListener("click", (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Optional: You could add a detail view or other functionality here
+  })
+
   // Set up Hammer.js for swipe gestures
-  setupSwipeGestures(animeCard, anime.title)
+  setupSwipeGestures(animeCard, anime)
 
   // Fetch more anime if queue is getting low
   if (animeQueue.length < 3) {
     fetchMoreAnime()
   }
+
+  // Update undo button state
+  updateUndoButtonState()
 }
 
 // Set up swipe gestures with Hammer.js
-function setupSwipeGestures(element, animeTitle) {
+function setupSwipeGestures(element, anime) {
   // Declare Hammer if it's not already declared globally
   let hammer
+
+  // Check if Hammer is defined globally
   if (typeof Hammer !== "undefined") {
     hammer = new Hammer(element)
   } else {
-    console.error("Hammer.js is not loaded.")
+    console.error("Hammer.js is not loaded. Make sure it's included in your HTML.")
     return
   }
+
   hammer.get("pan").set({ direction: Hammer.DIRECTION_HORIZONTAL })
+
+  // Add this line to prevent tap events from triggering swipes
+  hammer.get("tap").set({ enable: false })
+
+  // Disable press events as well
+  hammer.get("press").set({ enable: false })
 
   let xPos = 0
   let yPos = 0
   let rotation = 0
+  let isDragging = false
+
+  hammer.on("panstart", () => {
+    isDragging = true
+  })
 
   hammer.on("pan", (e) => {
     if (isAnimating) return
@@ -326,16 +416,34 @@ function setupSwipeGestures(element, animeTitle) {
 
   hammer.on("panend", (e) => {
     element.style.transition = "transform 0.5s ease"
+    isDragging = false
 
-    if (xPos > 100) {
+    // Only count as a swipe if there's sufficient velocity or distance
+    const isSignificantSwipe = Math.abs(e.velocity) > 0.3 || Math.abs(xPos) > 100
+
+    if (xPos > 100 && isSignificantSwipe) {
       // Swiped right (like)
       element.style.transform = `translate(${window.innerWidth}px, ${yPos}px) rotate(${rotation}deg)`
-      markAsSeen(animeTitle)
+      // Add to history before marking as seen
+      addToHistory(anime, "like")
+      markAsSeen(anime.title)
       handleSwipeAnimation("right")
-    } else if (xPos < -100) {
+
+      // Update stats
+      likedCount++
+      localStorage.setItem("likedCount", likedCount.toString())
+      updateStats()
+    } else if (xPos < -100 && isSignificantSwipe) {
       // Swiped left (dislike)
       element.style.transform = `translate(-${window.innerWidth}px, ${yPos}px) rotate(${rotation}deg)`
+      // Add to history
+      addToHistory(anime, "dislike")
       handleSwipeAnimation("left")
+
+      // Update stats
+      skippedCount++
+      localStorage.setItem("skippedCount", skippedCount.toString())
+      updateStats()
     } else {
       // Return to center if not swiped far enough
       element.style.transform = "translate(0, 0) rotate(0deg)"
@@ -343,6 +451,70 @@ function setupSwipeGestures(element, animeTitle) {
       indicators.forEach((indicator) => indicator.classList.add("hidden"))
     }
   })
+}
+
+// Add anime to history for undo functionality
+function addToHistory(anime, action) {
+  animeHistory.unshift({
+    anime: anime,
+    action: action,
+  })
+
+  // Limit history size
+  if (animeHistory.length > MAX_HISTORY) {
+    animeHistory.pop()
+  }
+
+  // Enable undo button
+  updateUndoButtonState()
+}
+
+// Update undo button state (enabled/disabled)
+function updateUndoButtonState() {
+  if (animeHistory.length > 0) {
+    undoButton.classList.remove("disabled")
+  } else {
+    undoButton.classList.add("disabled")
+  }
+}
+
+// Undo last action
+function undoLastAction() {
+  if (animeHistory.length === 0 || isAnimating) return
+
+  const lastAction = animeHistory.shift()
+
+  // If the last action was a like, remove from seen list
+  if (lastAction.action === "like") {
+    seenTitles.delete(lastAction.anime.title)
+    // Update localStorage
+    localStorage.setItem("seenAnime", JSON.stringify(Array.from(seenTitles)))
+
+    // Update stats
+    likedCount = Math.max(0, likedCount - 1)
+    localStorage.setItem("likedCount", likedCount.toString())
+  } else {
+    // If it was a dislike, update skipped count
+    skippedCount = Math.max(0, skippedCount - 1)
+    localStorage.setItem("skippedCount", skippedCount.toString())
+  }
+
+  updateStats()
+
+  // Add the anime back to the beginning of the queue
+  animeQueue.unshift(lastAction.anime)
+
+  // Remove current card and show the previous one
+  if (currentCard) {
+    animeCardContainer.removeChild(currentCard)
+    currentCard = null
+  }
+
+  // Show the anime that was undone
+  showNextAnime()
+
+  // Update undo button state
+  updateUndoButtonState()
 }
 
 // Handle swipe animation and show next card
@@ -368,6 +540,14 @@ function clearAllAnime() {
   if (confirm("Are you sure you want to clear your entire anime list? This cannot be undone.")) {
     seenTitles.clear()
     localStorage.removeItem("seenAnime")
+
+    // Reset stats
+    likedCount = 0
+    skippedCount = 0
+    localStorage.setItem("likedCount", "0")
+    localStorage.setItem("skippedCount", "0")
+    updateStats()
+
     alert("Your anime list has been cleared!")
   }
 }
@@ -406,24 +586,79 @@ function applyFiltersAndFetch() {
     isFilterChanged = false
   }
 
-  filterPanel.classList.add("hidden")
+  if (!isDesktop) {
+    filterPanel.classList.add("hidden")
+  }
 }
 
 // Reset all filters
 function resetAllFilters() {
+  // Clear state variables
   selectedGenres.clear()
+  bannedGenres.clear()
   selectedType = ""
   selectedYear = ""
   selectedQuickFilter = ""
 
-  // Reset UI
-  const activeButtons = document.querySelectorAll(".active")
-  activeButtons.forEach((button) => button.classList.remove("active"))
+  // Reset genre buttons
+  const genreButtons = genreButtonsContainer.querySelectorAll("button")
+  genreButtons.forEach((button) => {
+    button.classList.remove("active")
+    button.classList.remove("banned")
+  })
 
+  // Reset type buttons
+  typeFilterButtons.forEach((button) => {
+    button.classList.remove("active")
+  })
+
+  // Reset quick filter buttons
+  quickFilterButtons.forEach((button) => {
+    button.classList.remove("active")
+  })
+
+  // Reset year filter
   yearFilter.value = ""
 
   updateFilterBadge()
   isFilterChanged = true
+}
+
+// Handle keyboard shortcuts
+function handleKeyboardShortcuts(e) {
+  // Only process if we're not in an input field
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") {
+    return
+  }
+
+  switch (e.key) {
+    case "ArrowLeft":
+      // Skip (dislike)
+      if (currentCard && !isAnimating && !dislikeButton.classList.contains("disabled")) {
+        dislikeButton.click()
+      }
+      break
+    case "ArrowRight":
+      // Like
+      if (currentCard && !isAnimating && !likeButton.classList.contains("disabled")) {
+        likeButton.click()
+      }
+      break
+    case "z":
+    case "Z":
+      // Undo
+      if (!undoButton.classList.contains("disabled")) {
+        undoButton.click()
+      }
+      break
+    case "f":
+    case "F":
+      // Toggle filter panel (mobile only)
+      if (!isDesktop) {
+        filterButton.click()
+      }
+      break
+  }
 }
 
 // Set up event listeners
@@ -453,8 +688,12 @@ function setupEventListeners() {
   // Clear genres
   clearGenres.addEventListener("click", () => {
     selectedGenres.clear()
-    const activeGenreButtons = genreButtonsContainer.querySelectorAll(".active")
-    activeGenreButtons.forEach((button) => button.classList.remove("active"))
+    bannedGenres.clear()
+    const activeGenreButtons = genreButtonsContainer.querySelectorAll(".active, .banned")
+    activeGenreButtons.forEach((button) => {
+      button.classList.remove("active")
+      button.classList.remove("banned")
+    })
     updateFilterBadge()
     isFilterChanged = true
   })
@@ -535,6 +774,13 @@ function setupEventListeners() {
   // Clear all button
   clearAllButton.addEventListener("click", clearAllAnime)
 
+  // Undo button
+  undoButton.addEventListener("click", () => {
+    if (!undoButton.classList.contains("disabled")) {
+      undoLastAction()
+    }
+  })
+
   // Like button
   likeButton.addEventListener("click", () => {
     if (currentCard && !isAnimating) {
@@ -542,7 +788,17 @@ function setupEventListeners() {
       currentCard.classList.add("swiping-right")
 
       const animeTitle = currentCard.querySelector("h3").textContent
+      // Get the current anime from the queue
+      const currentAnime = animeQueue[0]
+      // Add to history before marking as seen
+      addToHistory(currentAnime, "like")
       markAsSeen(animeTitle)
+
+      // Update stats
+      likedCount++
+      localStorage.setItem("likedCount", likedCount.toString())
+      updateStats()
+
       handleSwipeAnimation("right")
     }
   })
@@ -552,9 +808,22 @@ function setupEventListeners() {
     if (currentCard && !isAnimating) {
       currentCard.style.transition = "transform 0.5s ease"
       currentCard.classList.add("swiping-left")
+      // Get the current anime from the queue
+      const currentAnime = animeQueue[0]
+      // Add to history
+      addToHistory(currentAnime, "dislike")
+
+      // Update stats
+      skippedCount++
+      localStorage.setItem("skippedCount", skippedCount.toString())
+      updateStats()
+
       handleSwipeAnimation("left")
     }
   })
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", handleKeyboardShortcuts)
 }
 
 // Start the app

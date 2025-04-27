@@ -43,6 +43,34 @@ h1 {
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 15px;
+}
+
+.keyboard-shortcuts {
+  display: none;
+  gap: 15px;
+  font-size: 14px;
+  color: #666;
+}
+
+.keyboard-shortcuts span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+kbd {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  color: #333;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  padding: 3px 6px;
+  white-space: nowrap;
 }
 
 .icon-button {
@@ -82,6 +110,13 @@ h1 {
 
 .badge.hidden {
   display: none;
+}
+
+/* Desktop Layout */
+.desktop-layout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
 }
 
 /* Filter Panel */
@@ -180,12 +215,49 @@ h1 {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
+  flex-wrap: wrap;
 }
 
 .section-header h4 {
   font-size: 16px;
   font-weight: 600;
   color: #333;
+}
+
+.genre-legend {
+  display: none;
+  gap: 10px;
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.legend-color.normal {
+  background-color: white;
+  border: 1px solid #ddd;
+}
+
+.legend-color.active {
+  background-color: #ff3366;
+  border: 1px solid #ff3366;
+}
+
+.legend-color.banned {
+  background-color: #333;
+  border: 1px solid #333;
 }
 
 .small-button {
@@ -238,12 +310,24 @@ h1 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  position: relative;
 }
 
 .genre-grid button.active {
   background-color: #ff3366;
   color: white;
   border-color: #ff3366;
+}
+
+.genre-grid button.banned {
+  background-color: #333;
+  color: white;
+  border-color: #333;
+  position: relative;
+}
+
+.genre-grid button.banned::before {
+  content: "";
 }
 
 .type-filters,
@@ -316,6 +400,42 @@ h1 {
   background-color: #f5f5f5;
 }
 
+/* Desktop Stats */
+.desktop-stats {
+  display: none;
+  padding: 15px 20px;
+  border-top: 1px solid #eee;
+  margin-top: auto;
+}
+
+.desktop-stats h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.stat-label {
+  color: #666;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #333;
+}
+
 /* Swipe Container */
 .swipe-container {
   flex: 1;
@@ -325,6 +445,7 @@ h1 {
   flex-direction: column;
   justify-content: space-between;
   padding: 20px;
+  min-height: 400px; /* Add minimum height to ensure card is visible */
 }
 
 #anime-card-container {
@@ -334,6 +455,7 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 300px; /* Add minimum height to ensure card is visible */
 }
 
 .anime-card {
@@ -346,6 +468,7 @@ h1 {
   overflow: hidden;
   transition: transform 0.3s ease;
   touch-action: none;
+  min-height: 300px; /* Add minimum height to ensure card is visible */
 }
 
 .anime-card.swiping-left {
@@ -389,8 +512,11 @@ h1 {
 .action-buttons {
   display: flex;
   justify-content: center;
-  gap: 40px;
+  gap: 20px;
   margin-top: 20px;
+  margin-bottom: 10px; /* Add margin at the bottom to prevent cut-off */
+  position: relative;
+  z-index: 5; /* Ensure buttons are above other elements */
 }
 
 .action-button {
@@ -407,7 +533,7 @@ h1 {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.action-button:hover {
+.action-button:hover:not(.disabled) {
   transform: scale(1.1);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
 }
@@ -420,6 +546,25 @@ h1 {
 .action-button.like {
   background-color: #ff3366;
   color: white;
+}
+
+.action-button.undo {
+  background-color: #f0f2f5;
+  color: #666;
+  width: 45px;
+  height: 45px;
+  font-size: 18px;
+  align-self: center;
+}
+
+.action-button.undo:not(.disabled):hover {
+  background-color: #e0e2e5;
+  color: #333;
+}
+
+.action-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Footer */
@@ -481,25 +626,206 @@ footer {
   display: none;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Desktop Styles */
+@media (min-width: 1024px) {
+  body {
+    background-color: #e0e2e5;
+    padding: 30px;
+  }
+
   .app-container {
-    height: 100vh;
+    max-width: 1200px;
+    height: calc(100vh - 60px);
+    border-radius: 15px;
+  }
+
+  header {
+    padding: 20px 30px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .keyboard-shortcuts.desktop-only {
+    display: flex;
+  }
+
+  .desktop-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #filter-panel {
+    position: static;
+    transform: none !important;
+    opacity: 1 !important;
+    width: 300px;
+    flex-shrink: 0;
+    border-right: 1px solid #eee;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  #filter-panel.hidden {
+    display: block;
+  }
+
+  .filter-header {
+    padding: 20px;
+  }
+
+  .filter-header h3 {
+    font-size: 20px;
+  }
+
+  #close-filter {
+    display: none;
+  }
+
+  .filter-search {
+    padding: 0 20px 20px;
+  }
+
+  .filter-sections {
+    padding: 0 20px;
+  }
+
+  .filter-actions {
+    padding: 20px;
+  }
+
+  .genre-legend.desktop-only {
+    display: flex;
+    margin-top: 10px;
     width: 100%;
+    justify-content: space-between;
+  }
+
+  .desktop-stats {
+    display: block;
   }
 
   .swipe-container {
-    padding: 15px;
+    flex: 1;
+    padding: 30px;
   }
 
-  .action-button {
+  #anime-card-container {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .anime-card {
+    border-radius: 15px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .anime-card img {
+    height: 70%;
+  }
+
+  .anime-info {
+    padding: 20px;
+  }
+
+  .anime-info h3 {
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .anime-info p {
+    font-size: 16px;
+  }
+
+  .action-buttons {
+    margin-top: 30px;
+    gap: 30px;
+  }
+
+  .action-button.like,
+  .action-button.dislike {
+    width: 70px;
+    height: 70px;
+    font-size: 28px;
+  }
+
+  .action-button.undo {
     width: 50px;
     height: 50px;
     font-size: 20px;
   }
 
+  footer {
+    padding: 20px;
+  }
+
+  .footer-button {
+    font-size: 16px;
+  }
+
+  .footer-button i {
+    font-size: 24px;
+  }
+
+  /* Desktop hover effects */
+  .genre-grid button:hover:not(.active):not(.banned) {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+  }
+
+  .quick-filter-btn:hover:not(.active),
+  .type-filter-btn:hover:not(.active) {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+  }
+}
+
+/* Responsive Design for Mobile */
+@media (max-width: 1023px) {
+  .desktop-layout {
+    display: block;
+    height: calc(100vh - 140px); /* Increase height to account for header, footer, and action buttons */
+  }
+
+  .swipe-container {
+    padding: 1Opx;
+    height: calc(100vh - 140px); /* Ensure container takes available height */
+    padding-bottom: 70px; /* Add extra padding at the bottom for action buttons */
+  }
+
+  #anime-card-container {
+    height: calc(100% - 100px); /* Increase space for action buttons */
+  }
+
+  .action-buttons {
+    position: absolute;
+    bottom: 15px;
+    left: 0;
+    right: 0;
+    margin-bottom: 0;
+  }
+
+  .action-button.like,
+  .action-button.dislike {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+
+  .action-button.undo {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
   .genre-grid {
     grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  }
+
+  .desktop-only {
+    display: none !important;
   }
 }
 
@@ -509,13 +835,20 @@ footer {
   }
 
   .action-buttons {
-    gap: 30px;
+    gap: 15px;
   }
 
-  .action-button {
+  .action-button.like,
+  .action-button.dislike {
     width: 45px;
     height: 45px;
     font-size: 18px;
+  }
+
+  .action-button.undo {
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
   }
 
   .anime-info h3 {
