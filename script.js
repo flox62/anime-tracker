@@ -846,92 +846,10 @@ function undoLastAction() {
 function handleSwipeAnimation(direction) {
   isAnimating = true
 
-  // Prepare the next card immediately but keep it hidden
-  const nextAnimeCard = document.createElement("div")
-  nextAnimeCard.classList.add("anime-card")
-  nextAnimeCard.style.opacity = "0"
-
-  if (animeQueue.length > 0) {
-    const nextAnime = animeQueue[0]
-
-    // Create like/dislike indicators for next card
-    const likeIndicator = document.createElement("div")
-    likeIndicator.classList.add("swipe-indicator", "like", "hidden")
-    likeIndicator.textContent = "LIKE"
-
-    const dislikeIndicator = document.createElement("div")
-    dislikeIndicator.classList.add("swipe-indicator", "dislike", "hidden")
-    dislikeIndicator.textContent = "NOPE"
-
-    // Create anime image for next card
-    const animeImage = document.createElement("img")
-    animeImage.src = nextAnime.images.jpg.large_image_url || nextAnime.images.jpg.image_url
-    animeImage.alt = nextAnime.title
-    animeImage.classList.add("anime-image")
-
-    // Create anime info section for next card
-    const animeInfo = document.createElement("div")
-    animeInfo.classList.add("anime-info")
-
-    const animeTitle = document.createElement("h3")
-    animeTitle.textContent = nextAnime.title
-
-    const animeDetails = document.createElement("p")
-    const year = nextAnime.aired && nextAnime.aired.from ? new Date(nextAnime.aired.from).getFullYear() : "?"
-    animeDetails.textContent = `${nextAnime.type || "TV"} · ${year} · ${nextAnime.episodes || "?"} eps · ${nextAnime.score || "?"}/10`
-
-    // Assemble the next card
-    animeInfo.appendChild(animeTitle)
-    animeInfo.appendChild(animeDetails)
-    nextAnimeCard.appendChild(likeIndicator)
-    nextAnimeCard.appendChild(dislikeIndicator)
-    nextAnimeCard.appendChild(animeImage)
-    nextAnimeCard.appendChild(animeInfo)
-
-    // Add the next card to the container behind the current card
-    animeCardContainer.appendChild(nextAnimeCard)
-  }
-
-  // Wait for current card animation to complete
+  // Wait for animation to complete before showing next card
   setTimeout(() => {
-    // Remove the current card
-    if (currentCard) {
-      animeCardContainer.removeChild(currentCard)
-      currentCard = null
-    }
-
-    // If we prepared a next card, make it visible with a fade-in effect
-    if (animeQueue.length > 0) {
-      nextAnimeCard.style.transition = "opacity 0.3s ease"
-      nextAnimeCard.style.opacity = "1"
-      currentCard = nextAnimeCard
-
-      // Set up event listeners for the image to prevent swipe gestures
-      const nextImage = nextAnimeCard.querySelector(".anime-image")
-      if (nextImage) {
-        setupImageEventListeners(nextImage)
-      }
-
-      // Set up Hammer.js for swipe gestures on the card
-      setupSwipeGestures(nextAnimeCard, animeQueue[0])
-
-      // Remove the first anime from the queue since we're showing it now
-      animeQueue.shift()
-
-      // Fetch more anime if queue is getting low
-      if (animeQueue.length < 3) {
-        fetchMoreAnime()
-      }
-
-      // Update undo button state
-      updateUndoButtonState()
-    } else {
-      // If no more anime in queue, show loading and fetch more
-      animeCardContainer.innerHTML = '<div id="loading">Loading more anime...</div>'
-      fetchMoreAnime()
-    }
-
     isAnimating = false
+    showNextAnime()
   }, 300)
 }
 
@@ -1035,9 +953,8 @@ function generatePDF() {
   // Process each series group
   Object.entries(groupedAnime).forEach(([seriesName, seasons], seriesIndex) => {
     // Check if we need a new page
-    if (itemCount > 0 && yPos > 270) {
+    if (itemCount > 0 && itemCount % itemsPerPage === 0) {
       addNewPage()
-      itemCount = 0
     }
 
     // Add series name with highlight
@@ -1053,9 +970,8 @@ function generatePDF() {
     // Add each season under the series
     seasons.forEach((title, seasonIndex) => {
       // Check if we need a new page
-      if (itemCount > 0 && yPos > 270) {
+      if (itemCount > 0 && itemCount % itemsPerPage === 0) {
         addNewPage()
-        itemCount = 0
       }
 
       // Add alternating row background for seasons
